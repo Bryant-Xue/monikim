@@ -1,0 +1,13 @@
+port: "8080" # Desired binding port
+image_dir: "./img" # image directories
+disable_file_type_check: true 
+favicon_path: "./favicon.png"
+
+cors_enabled: true
+allowed_origins:
+  - "https://exapmle.com" # Allowed Origin(s)
+allowed_methods: 
+  - "GET"
+  - "POST"
+allowed_headers: 
+  - "*"
