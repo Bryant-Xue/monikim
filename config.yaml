@@ -1,13 +1,62 @@
-port: "8080" # Desired binding port
-image_dir: "./img" # image directories
-disable_file_type_check: true 
-favicon_path: "./favicon.png"
+# Configuration file for the image server
 
-cors_enabled: true
-allowed_origins:
-  - "https://exapmle.com" # Allowed Origin(s)
+# The port on which the server will listen for incoming requests.
+port: "8080"  # Default: "8080". Change this to any available port.
+
+# The directory where image files are stored. This is the folder that the server will scan for images.
+image_dir: "./images"  # Example: "/var/www/images" or "./assets/images"
+
+# List of allowed file extensions for images. Files with extensions not in this list will be ignored.
+allowed_extensions: 
+  - ".jpg"
+  - ".jpeg"
+  - ".png"
+  - ".gif"  # You can add or remove file extensions as needed.
+
+# If set to true, the server will skip file extension checks and consider all files as valid images.
+disable_file_type_check: false  # Default: false. Set to true to allow serving files with any extension.
+
+# Path to the favicon that will be served when the browser requests /favicon.ico.
+favicon_path: "./favicon.ico"  # Change to the path of your favicon, e.g., "./static/favicon.ico".
+
+# Enable or disable Cross-Origin Resource Sharing (CORS) headers.
+cors_enabled: true  # Default: false. Set to true to enable CORS headers.
+
+# List of allowed origins for CORS. If empty, it will default to "*", allowing all origins.
+allowed_origins: 
+  - "*"
+  - "https://example.com"  # Example: Only allow requests from https://example.com
+
+# List of allowed HTTP methods when CORS is enabled.
 allowed_methods: 
   - "GET"
   - "POST"
+  - "OPTIONS"  # You can add or remove methods as required.
+
+# List of allowed HTTP headers when CORS is enabled.
 allowed_headers: 
-  - "*"
+  - "Content-Type"
+  - "Authorization"  # Add any additional headers you want to allow.
+
+# Mode for image serving. Possible values are:
+# - "direct": The image is served directly as the response body.
+# - "redir": The server responds with a 302 redirect to the image URL, useful for CDN caching.
+mode: "redir"  # Options: "direct" or "redir". Default: "direct".
+
+# Mapping of URL parameters to specific image paths. 
+# If a request contains a URL parameter that matches a key, the corresponding image will be served.
+# Example: If the URL is /?special=holiday, and "holiday" is in this list, it will return the image at ./images/holiday.jpg.
+param_redirects: 
+  special: "holiday.jpg"  # If URL contains ?special=holiday, the file holiday.jpg will be served.
+  promo: "promo.png"  # If URL contains ?promo=promo, the file promo.png will be served.
+
+# Enable or disable referer-based access control. 
+# If true, only requests with a referer in the "allowed_referers" list will be allowed.
+referer_restriction: true  # Default: false. Set to true to enable referer-based access control.
+
+# List of allowed referers. If the Referer header is not in this list, the server will return a 403 Forbidden.
+# If empty, referer-based restriction is disabled.
+allowed_referers: 
+  - "https://example.com"
+  - "https://sub.example.com"  # List all allowed referers. Only these domains can make requests to the server.
+
