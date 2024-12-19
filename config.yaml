@@ -1,62 +1,72 @@
-# Configuration file for the image server
+# Sample Configuration File (config.yaml) with Detailed Descriptions
 
-# The port on which the server will listen for incoming requests.
-port: "8080"  # Default: "8080". Change this to any available port.
+# The port on which the server will listen for incoming HTTP requests.
+# Example: "8080" means the server will be accessible on http://localhost:8080
+port: "8098"
 
-# The directory where image files are stored. This is the folder that the server will scan for images.
-image_dir: "./images"  # Example: "/var/www/images" or "./assets/images"
+# The default directory where image files are stored.
+# When no "source" parameter is provided in the URL, images will be loaded from this directory.
+# Example: "./images"
+image_dir: "./images"
 
-# List of allowed file extensions for images. Files with extensions not in this list will be ignored.
-allowed_extensions: 
-  - ".jpg"
-  - ".jpeg"
-  - ".png"
-  - ".gif"  # You can add or remove file extensions as needed.
+# A list of allowed file extensions for image files.
+# If disable_file_type_check is set to true, this list will be ignored.
+# Example: [".jpg", ".png", ".gif"]
+allowed_extensions: [".jpg", ".png", ".gif", ".webp"]
 
-# If set to true, the server will skip file extension checks and consider all files as valid images.
-disable_file_type_check: false  # Default: false. Set to true to allow serving files with any extension.
+# If set to true, the server will skip the file extension check.
+# This means any file, regardless of its extension, can be served as an image.
+# Example: true (disables file type check) or false (only serves allowed file types)
+disable_file_type_check: false
 
-# Path to the favicon that will be served when the browser requests /favicon.ico.
-favicon_path: "./favicon.ico"  # Change to the path of your favicon, e.g., "./static/favicon.ico".
+# The path to the favicon file to be served when the "/favicon.ico" endpoint is accessed.
+# Example: "./assets/favicon.ico"
+favicon_path: "./assets/favicon.ico"
 
-# Enable or disable Cross-Origin Resource Sharing (CORS) headers.
-cors_enabled: true  # Default: false. Set to true to enable CORS headers.
+# Enable Cross-Origin Resource Sharing (CORS) support.
+# When set to true, the server will add appropriate CORS headers to the response.
+# Example: true (enable CORS) or false (disable CORS)
+cors_enabled: true
 
-# List of allowed origins for CORS. If empty, it will default to "*", allowing all origins.
-allowed_origins: 
-  - "*"
-  - "https://example.com"  # Example: Only allow requests from https://example.com
+# A list of allowed origins for CORS requests.
+# Use "*" to allow all origins or specify specific domains (e.g., ["https://example.com"]).
+# This is only relevant if cors_enabled is set to true.
+# Example: ["https://example.com", "https://another-site.com"]
+allowed_origins: ["*"]
 
-# List of allowed HTTP methods when CORS is enabled.
-allowed_methods: 
-  - "GET"
-  - "POST"
-  - "OPTIONS"  # You can add or remove methods as required.
+# A list of allowed HTTP methods for CORS requests.
+# If set, only these methods will be allowed for cross-origin requests.
+# Example: ["GET", "POST", "OPTIONS"]
+allowed_methods: ["GET", "POST", "OPTIONS"]
 
-# List of allowed HTTP headers when CORS is enabled.
-allowed_headers: 
-  - "Content-Type"
-  - "Authorization"  # Add any additional headers you want to allow.
+# A list of allowed headers for CORS requests.
+# This is useful if you want to allow custom headers in cross-origin requests.
+# Example: ["Content-Type", "Authorization"]
+allowed_headers: ["Content-Type", "Authorization", "*"]
 
-# Mode for image serving. Possible values are:
-# - "direct": The image is served directly as the response body.
-# - "redir": The server responds with a 302 redirect to the image URL, useful for CDN caching.
-mode: "redir"  # Options: "direct" or "redir". Default: "direct".
+# The mode of operation for serving images.
+# "direct": Directly serves the image file as a response.
+# "redir": Redirects the client to the URL of the image file.
+# Example: "direct" or "redir"
+mode: "redir"
 
-# Mapping of URL parameters to specific image paths. 
-# If a request contains a URL parameter that matches a key, the corresponding image will be served.
-# Example: If the URL is /?special=holiday, and "holiday" is in this list, it will return the image at ./images/holiday.jpg.
-param_redirects: 
-  special: "holiday.jpg"  # If URL contains ?special=holiday, the file holiday.jpg will be served.
-  promo: "promo.png"  # If URL contains ?promo=promo, the file promo.png will be served.
+# Enable referer check to restrict access based on the HTTP Referer header.
+# If set to true, requests with a Referer not in the allowed_referers list will be rejected with a 403 status code.
+# Example: true (enable referer check) or false (disable referer check)
+referer_check_enabled: false
 
-# Enable or disable referer-based access control. 
-# If true, only requests with a referer in the "allowed_referers" list will be allowed.
-referer_restriction: true  # Default: false. Set to true to enable referer-based access control.
+# A list of allowed Referer URLs.
+# Only requests with a Referer matching one of these values will be allowed.
+# Example: ["https://example.com", "https://another-site.com"]
+allowed_referers: ["https://example.com", "https://another-site.com"]
 
-# List of allowed referers. If the Referer header is not in this list, the server will return a 403 Forbidden.
-# If empty, referer-based restriction is disabled.
-allowed_referers: 
-  - "https://example.com"
-  - "https://sub.example.com"  # List all allowed referers. Only these domains can make requests to the server.
-
+# A mapping of URL query parameters to specific image directories.
+# If the "source" parameter in the URL matches one of these keys, the server will load images from the corresponding directory.
+# This allows serving images from multiple directories based on the user's input.
+# Example: If the URL is /?source=dogs, the server will load images from "./images/dogs"
+# If the URL is /?source=cats, the server will load images from "./images/cats"
+# If no matching source is found, it defaults to the 'image_dir' directory.
+param_source_mapping:
+  dogs: "./images/dogs"
+  cats: "./images/cats"
+  nature: "./images/nature"

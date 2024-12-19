@@ -25,9 +25,9 @@ type Config struct {
 	AllowedMethods       []string          `yaml:"allowed_methods"`
 	AllowedHeaders       []string          `yaml:"allowed_headers"`
 	Mode                 string            `yaml:"mode"`
-	ParamRedirects       map[string]string `yaml:"param_redirects"`
-	RefererRestriction   bool              `yaml:"referer_restriction"`
+	RefererCheckEnabled  bool              `yaml:"referer_check_enabled"`
 	AllowedReferers      []string          `yaml:"allowed_referers"`
+	ParamSourceMapping   map[string]string `yaml:"param_source_mapping"`
 }
 
 // loadConfig loads configuration from the specified YAML file
@@ -81,39 +81,29 @@ func isValidExtension(fileName string, allowedExtensions []string) bool {
 	return false
 }
 
-// validateReferer checks if the referer is allowed
-func validateReferer(r *http.Request, allowedReferers []string) bool {
-	if len(allowedReferers) == 0 {
-		return true
-	}
-	referer := r.Referer()
-	for _, allowed := range allowedReferers {
-		if referer == allowed {
+// serveImageRedirect redirects to the image URL instead of serving it directly
+func serveImageRedirect(w http.ResponseWriter, imagePath string) {
+	http.Redirect(w, &http.Request{}, imagePath, http.StatusFound)
+}
+
+// serveImageFile serves the specified image file
+func serveImageFile(w http.ResponseWriter, imagePath string) {
+	http.ServeFile(w, &http.Request{}, imagePath)
+}
+
+// contains checks if a slice contains a given element
+func contains(slice []string, item string) bool {
+	for _, element := range slice {
+		if element == item {
 			return true
 		}
 	}
 	return false
 }
 
-// serveFavicon serves the favicon if requested
-func serveFavicon(w http.ResponseWriter, r *http.Request, faviconPath string) {
-	http.ServeFile(w, r, faviconPath)
-}
-
-// serveRandomImage serves a random image or redirects to its URL based on the config
-func serveRandomImage(w http.ResponseWriter, r *http.Request, config *Config, verbose bool) {
-	if config.RefererRestriction && !validateReferer(r, config.AllowedReferers) {
-		http.Error(w, "\u8bbf\u95ee\u88ab\u62d2\u7edd", http.StatusForbidden)
-		return
-	}
-
-	handleCORS(w, r, config)
-	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
-	w.Header().Set("Expires", "0")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Surrogate-Control", "no-store")
-
-	files, err := os.ReadDir(config.ImageDir)
+// handleImageRequest processes the image request logic
+func handleImageRequest(w http.ResponseWriter, r *http.Request, config *Config, imageDir string) {
+	files, err := os.ReadDir(imageDir)
 	if err != nil {
 		http.Error(w, "\u65e0\u6cd5\u8bfb\u53d6\u56fe\u7247\u76ee\u5f55", http.StatusInternalServerError)
 		return
@@ -133,16 +123,16 @@ func serveRandomImage(w http.ResponseWriter, r *http.Request, config *Config, ve
 
 	rand.Seed(time.Now().UnixNano())
 	selectedFile := validFiles[rand.Intn(len(validFiles))]
-
+	imagePath := filepath.Join(imageDir, selectedFile.Name())
 	if config.Mode == "redir" {
-		http.Redirect(w, r, "/"+filepath.Join(config.ImageDir, selectedFile.Name()), http.StatusFound)
+		serveImageRedirect(w, imagePath)
 	} else {
-		http.ServeFile(w, r, filepath.Join(config.ImageDir, selectedFile.Name()))
+		serveImageFile(w, imagePath)
 	}
 }
 
+// main is the entry point of the application
 func main() {
-	verbose := flag.Bool("v", false, "\u8f93\u51fa\u8be6\u7ec6\u65e5\u5fd7")
 	flag.Parse()
 
 	config, err := loadConfig("config.yaml")
@@ -151,7 +141,17 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		serveRandomImage(w, r, config, *verbose)
+		param := r.URL.Query().Get("source")
+		imageDir := config.ImageDir
+		if customDir, exists := config.ParamSourceMapping[param]; exists {
+			imageDir = customDir
+		}
+		referer := r.Referer()
+		if config.RefererCheckEnabled && !contains(config.AllowedReferers, referer) {
+			http.Error(w, "403 Forbidden", http.StatusForbidden)
+			return
+		}
+		handleImageRequest(w, r, config, imageDir)
 	})
 
 	log.Printf("\u670d\u52a1\u5668\u6b63\u5728\u7aef\u53e3 %s \u542f\u52a8...", config.Port)
